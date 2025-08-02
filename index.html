@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Discover how many people share your birthday with TwinBirth - Join our global community and find your birth twins around the world.">
+    <meta name="keywords" content="birthday, birth twins, birthday twins, shared birthday, global community, birth date">
+    <meta name="author" content="TwinBirth Team">
+    <meta name="robots" content="index, follow">
+    
+    <!-- Open Graph Meta Tags -->
+    <meta property="og:title" content="TwinBirth - Discover Your Birth Twins">
+    <meta property="og:description" content="Join our global community and find out how many birth twins you have around the world.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://twinbirth.com">
+    <meta property="og:image" content="https://twinbirth.com/images/og-image.jpg">
+    
+    <!-- Twitter Card Meta Tags -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="TwinBirth - Discover Your Birth Twins">
+    <meta name="twitter:description" content="Join our global community and find out how many birth twins you have around the world.">
+    <meta name="twitter:image" content="https://twinbirth.com/images/og-image.jpg">
+    
+    <!-- Security Meta Tags -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://cdnjs.cloudflare.com/ajax/libs https://www.gstatic.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdnjs.cloudflare.com/ajax/libs; img-src 'self' data: https:; font-src 'self' https://cdnjs.cloudflare.com/ajax/libs; connect-src 'self' https://www.gstatic.com https://identitytoolkit.googleapis.com https://firestore.googleapis.com;">
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta http-equiv="X-Frame-Options" content="DENY">
+    <meta http-equiv="X-XSS-Protection" content="1; mode=block">
+    
+    <!-- Favicon -->
+    <link rel="icon" href="favicon.ico" type="image/x-icon">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    
+    <title>TwinBirth - Discover Your Birth Twins</title>
+    
+    <!-- Preconnect to external domains for performance -->
+    <link rel="preconnect" href="https://cdn.tailwindcss.com">
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+    <link rel="preconnect" href="https://www.gstatic.com">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer">
+    <link rel="stylesheet" href="css/styles.css">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Theme configuration for dark mode -->
+    <script>
+        // Check for saved theme preference or default to 'light'
+        const theme = localStorage.getItem('theme') || 'light';
+        document.documentElement.setAttribute('data-theme', theme);
+    </script>
+</head>
+<body class="bg-gray-50 text-gray-800 transition-colors duration-300">
+    <!-- Firebase Config -->
+    <script>
+        // Load configuration first
+        window.addEventListener('DOMContentLoaded', () => {
+            // Check if CONFIG is available
+            if (typeof CONFIG === 'undefined') {
+                console.error('Configuration not loaded. Please check config.js');
+                document.body.innerHTML = '<div class="error-container"><h1>Configuration Error</h1><p>Unable to load application configuration. Please try again later.</p></div>';
+                return;
+            }
+            
+            // Initialize Firebase with config
+            const firebaseConfig = CONFIG.firebase;
+            
+            // Initialize Firebase
+            firebase.initializeApp(firebaseConfig);
+            const auth = firebase.auth();
+            const db = firebase.firestore();
+            const storage = firebase.storage();
+            
+            // Set persistence for better UX
+            auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL)
+                .catch(error => {
+                    console.error("Error setting auth persistence:", error);
+                });
+        });
+    </script>
+    
+    <!-- Skip to main content for accessibility -->
+    <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 bg-blue-600 text-white px-4 py-2 rounded-md">Skip to main content</a>
+    
+    <!-- Loading overlay -->
+    <div id="loadingOverlay" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-xl p-8 max-w-md mx-4 text-center">
+            <div class="spinner-border text-blue-600 mb-4" role="status">
+                <span class="sr-only">Loading...</span>
+            </div>
+            <p class="text-lg" data-i18n="common.loading">Loading...</p>
+        </div>
+    </div>
+    
+    <!-- Error notification -->
+    <div id="errorNotification" class="hidden fixed bottom-4 right-4 bg-red-600 text-white px-6 py-3 rounded-lg shadow-lg z-50">
+        <div class="flex items-center">
+            <i class="fas fa-exclamation-circle mr-2"></i>
+            <span id="errorMessage">An error occurred</span>
+            <button onclick="hideErrorNotification()" class="ml-4 text-white hover:text-gray-200">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    </div>
+    
+    <!-- Toast Container -->
+    <div id="toastContainer" aria-live="polite" aria-atomic="true"></div>
+    
+    <!-- Language Switcher -->
+    <div class="fixed top-4 right-4 z-50">
+        <div class="bg-white rounded-lg shadow-lg p-2 flex gap-2" role="group" aria-label="Language selection">
+            <button onclick="changeLanguage('en')" class="lang-btn px-3 py-1 rounded text-sm font-medium transition-all hover:bg-blue-100" data-lang="en" aria-label="Switch to English">EN</button>
+            <button onclick="changeLanguage('ar')" class="lang-btn px-3 py-1 rounded text-sm font-medium transition-all hover:bg-blue-100" data-lang="ar" aria-label="Switch to Arabic">AR</button>
+            <button onclick="changeLanguage('fr')" class="lang-btn px-3 py-1 rounded text-sm font-medium transition-all hover:bg-blue-100" data-lang="fr" aria-label="Switch to French">FR</button>
+        </div>
+    </div>
+    
+    <!-- Theme Switcher -->
+    <div class="fixed top-4 left-4 z-50">
+        <button onclick="toggleTheme()" class="bg-white rounded-lg shadow-lg p-3 text-gray-700 hover:text-gray-900 transition-all" aria-label="Toggle theme">
+            <i class="fas fa-moon" id="themeIcon"></i>
+        </button>
+    </div>
+    
+    <!-- Main Container -->
+    <main id="app" class="min-h-screen">
+        <!-- Landing Page -->
+        <section id="landing" class="min-h-screen flex items-center justify-center px-4" aria-labelledby="landing-title">
+            <div class="max-w-4xl mx-auto text-center fade-in">
+                <!-- Logo -->
+                <div class="mb-8">
+                    <div class="w-24 h-24 mx-auto bg-gradient-to-br from-blue-400 to-purple-600 rounded-full flex items-center justify-center shadow-lg" aria-hidden="true">
+                        <i class="fas fa-baby text-white text-4xl"></i>
+                    </div>
+                </div>
+                
+                <h1 id="landing-title" class="text-5xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                    TwinBirth
+                </h1>
+                
+                <p class="text-xl md:text-2xl mb-8 text-gray-600" data-i18n="landing.welcome">
+                    Discover how many people share your special day!
+                </p>
+                
+                <p class="text-lg mb-12 text-gray-500 max-w-2xl mx-auto" data-i18n="landing.description">
+                    Join our global community and find out how many birth twins you have around the world.
+                </p>
+                
+                <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                    <button onclick="showSection('register')" class="bg-blue-600 text-white px-8 py-4 rounded-lg font-semibold hover:bg-blue-700 transition-all transform hover:scale-105 shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50">
+                        <i class="fas fa-user-plus mr-2" aria-hidden="true"></i>
+                        <span data-i18n="landing.register">Register Now</span>
+                    </button>
+                    <button onclick="showSection('statistics')" class="bg-purple-600 text-white px-8 py-4 rounded-lg font-semibold hover:bg-purple-700 transition-all transform hover:scale-105 shadow-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-50">
+                        <i class="fas fa-chart-bar mr-2" aria-hidden="true"></i>
+                        <span data-i18n="landing.viewStats">View Statistics</span>
+                    </button>
+                    <button onclick="showSection('admin')" class="bg-red-600 text-white px-8 py-4 rounded-lg font-semibold hover:bg-red-700 transition-all transform hover:scale-105 shadow-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50">
+                        <i class="fas fa-shield-alt mr-2" aria-hidden="true"></i>
+                        <span data-i18n="landing.admin">Admin</span>
+                    </button>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Registration Form -->
+        <section id="register" class="hidden min-h-screen flex items-center justify-center px-4 py-12" aria-labelledby="register-title">
+            <div class="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 fade-in">
+                <h2 id="register-title" class="text-3xl font-bold mb-6 text-center" data-i18n="register.title">Register Your Birth Date</h2>
+                
+                <form id="registrationForm" class="space-y-4" novalidate>
+                    <!-- Email -->
+                    <div>
+                        <label for="email" class="block text-sm font-medium mb-1" data-i18n="register.email">Email Address *</label>
+                        <input type="email" id="email" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" aria-describedby="emailError">
+                        <div id="emailError" class="text-red-500 text-sm mt-1 hidden" role="alert"></div>
+                    </div>
+                    
+                    <!-- Password -->
+                    <div>
+                        <label for="password" class="block text-sm font-medium mb-1" data-i18n="register.password">Password *</label>
+                        <div class="relative">
+                            <input type="password" id="password" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-10" aria-describedby="passwordError">
+                            <button type="button" onclick="togglePasswordVisibility('password')" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600" aria-label="Toggle password visibility">
+                                <i class="fas fa-eye" id="passwordToggleIcon"></i>
+                            </button>
+                        </div>
+                        <div id="passwordError" class="text-red-500 text-sm mt-1 hidden" role="alert"></div>
+                        <div class="text-xs text-gray-500 mt-1" data-i18n="validation.passwordHint">Password must be at least 8 characters with letters and numbers</div>
+                    </div>
+                    
+                    <!-- Date of Birth -->
+                    <div class="grid grid-cols-3 gap-3">
+                        <div>
+                            <label for="day" class="block text-sm font-medium mb-1" data-i18n="register.day">Day</label>
+                            <select id="day" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" aria-describedby="dayError">
+                                <!-- Days will be populated by JavaScript -->
+                            </select>
+                            <div id="dayError" class="text-red-500 text-sm mt-1 hidden" role="alert"></div>
+                        </div>
+                        <div>
+                            <label for="month" class="block text-sm font-medium mb-1" data-i18n="register.month">Month</label>
+                            <select id="month" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" aria-describedby="monthError">
+                                <!-- Months will be populated by JavaScript -->
+                            </select>
+                            <div id="monthError" class="text-red-500 text-sm mt-1 hidden" role="alert"></div>
+                        </div>
+                        <div>
+                            <label for="year" class="block text-sm font-medium mb-1" data-i18n="register.year">Year</label>
+                            <input type="number" id="year" required min="1900" max="2024" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" aria-describedby="yearError">
+                            <div id="yearError" class="text-red-500 text-sm mt-1 hidden" role="alert"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Time of Birth (Optional) -->
+                    <div>
+                        <label for="time" class="block text-sm font-medium mb-1" data-i18n="register.time">Time of Birth (Optional)</label>
+                        <input type="time" id="time" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+                    
+                    <!-- Country -->
+                    <div>
+                        <label for="country" class="block text-sm font-medium mb-1" data-i18n="register.country">Country *</label>
+                        <select id="country" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" aria-describedby="countryError">
+                            <!-- Countries will be populated by JavaScript -->
+                        </select>
+                        <div id="countryError" class="text-red-500 text-sm mt-1 hidden" role="alert"></div>
+                    </div>
+                    
+                    <!-- City (Optional) -->
+                    <div>
+                        <label for="city" class="block text-sm font-medium mb-1" data-i18n="register.city">City (Optional)</label>
+                        <input type="text" id="city" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+                    
+                    <!-- Privacy Settings -->
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <label class="flex items-center cursor-pointer">
+                            <input type="checkbox" id="showEmail" class="mr-2 w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
+                            <span class="text-sm" data-i18n="register.showEmail">Show my email to others born on the same date</span>
+                        </label>
+                    </div>
+                    
+                    <!-- Submit Button -->
+                    <button type="submit" class="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition-all transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50">
+                        <i class="fas fa-check mr-2" aria-hidden="true"></i>
+                        <span data-i18n="register.submit">Register</span>
+                    </button>
+                </form>
+                
+                <div class="mt-4 text-center">
+                    <p class="text-gray-600" data-i18n="register.loginPrompt">Already have an account? <a href="#" onclick="showSection('login')" class="text-blue-600 hover:underline focus:outline-none focus:ring-2 focus:ring-blue-500 rounded">Login</a></p>
+                </div>
+                
+                <button onclick="showSection('landing')" class="mt-4 text-gray-600 hover:text-gray-800 transition-all focus:outline-none focus:ring-2 focus:ring-gray-500 rounded">
+                    <i class="fas fa-arrow-left mr-2" aria-hidden="true"></i>
+                    <span data-i18n="common.back">Back to Home</span>
+                </button>
+            </div>
+        </section>
+        
+        <!-- Login Form -->
+        <section id="login" class="hidden min-h-screen flex items-center justify-center px-4 py-12" aria-labelledby="login-title">
+            <div class="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 fade-in">
+                <h2 id="login-title" class="text-3xl font-bold mb-6 text-center" data-i18n="login.title">Login to TwinBirth</h2>
+                
+                <form id="loginForm" class="space-y-4" novalidate>
+                    <!-- Email -->
+                    <div>
+                        <label for="loginEmail" class="block text-sm font-medium mb-1" data-i18n="login.email">Email Address</label>
+                        <input type="email" id="loginEmail" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" aria-describedby="loginEmailError">
+                        <div id="loginEmailError" class="text-red-500 text-sm mt-1 hidden" role="alert"></div>
+                    </div>
+                    
+                    <!-- Password -->
+                    <div>
+                        <label for="loginPassword" class="block text-sm font-medium mb-1" data-i18n="login.password">Password</label>
+                        <div class="relative">
+                            <input type="password" id="loginPassword" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-10" aria-describedby="loginPasswordError">
+                            <button type="button" onclick="togglePasswordVisibility('loginPassword')" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600" aria-label="Toggle password visibility">
+                                <i class="fas fa-eye" id="loginPasswordToggleIcon"></i>
+                            </button>
+                        </div>
+                        <div id="loginPasswordError" class="text-red-500 text-sm mt-1 hidden" role="alert"></div>
+                    </div>
+                    
+                    <!-- Submit Button -->
+                    <button type="submit" class="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition-all transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50">
+                        <i class="fas fa-sign-in-alt mr-2" aria-hidden="true"></i>
+                        <span data-i18n="login.submit">Login</span>
+                    </button>
+                </form>
+                
+                <div class="mt-4 text-center">
+                    <p class="text-gray-600" data-i18n="login.registerPrompt">Don't have an account? <a href="#" onclick="showSection('register')" class="text-blue-600 hover:underline focus:outline-none focus:ring-2 focus:ring-blue-500 rounded">Register</a></p>
+                </div>
+                
+                <button onclick="showSection('landing')" class="mt-4 text-gray-600 hover:text-gray-800 transition-all focus:outline-none focus:ring-2 focus:ring-gray-500 rounded">
+                    <i class="fas fa-arrow-left mr-2" aria-hidden="true"></i>
+                    <span data-i18n="common.back">Back to Home</span>
+                </button>
+            </div>
+        </section>
+        
+        <!-- Statistics Page -->
+        <section id="statistics" class="hidden min-h-screen px-4 py-12" aria-labelledby="stats-title">
+            <div class="max-w-6xl mx-auto">
+                <h2 id="stats-title" class="text-4xl font-bold mb-8 text-center" data-i18n="stats.title">Birth Statistics</h2>
+                
+                <!-- Statistics Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                    <div class="bg-white rounded-xl shadow-lg p-6 text-center transform hover:scale-105 transition-all">
+                        <i class="fas fa-users text-4xl text-blue-600 mb-4" aria-hidden="true"></i>
+                        <h3 class="text-2xl font-bold mb-2" id="totalUsers">0</h3>
+                        <p class="text-gray-600" data-i18n="stats.totalUsers">Total Users</p>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-lg p-6 text-center transform hover:scale-105 transition-all">
+                        <i class="fas fa-calendar-day text-4xl text-purple-600 mb-4" aria-hidden="true"></i>
+                        <h3 class="text-2xl font-bold mb-2" id="sameDayCount">0</h3>
+                        <p class="text-gray-600" data-i18n="stats.sameDay">Same Date</p>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-lg p-6 text-center transform hover:scale-105 transition-all">
+                        <i class="fas fa-globe text-4xl text-green-600 mb-4" aria-hidden="true"></i>
+                        <h3 class="text-2xl font-bold mb-2" id="countriesCount">0</h3>
+                        <p class="text-gray-600" data-i18n="stats.countries">Countries</p>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-lg p-6 text-center transform hover:scale-105 transition-all">
+                        <i class="fas fa-birthday-cake text-4xl text-pink-600 mb-4" aria-hidden="true"></i>
+                        <h3 class="text-2xl font-bold mb-2" id="todayBirthdays">0</h3>
+                        <p class="text-gray-600" data-i18n="stats.today">Today's Birthdays</p>
+                    </div>
+                </div>
+                
+                <!-- Charts Section -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                    <!-- Births by Month Chart -->
+                    <div class="bg-white rounded-xl shadow-lg p-6">
+                        <h3 class="text-xl font-semibold mb-4" data-i18n="stats.byMonth">Births by Month</h3>
+                        <div class="chart-container" role="img" aria-label="Chart showing births by month">
+                            <canvas id="birthsByMonthChart"></canvas>
+                        </div>
+                    </div>
+                    <!-- Births by Year Chart -->
+                    <div class="bg-white rounded-xl shadow-lg p-6">
+                        <h3 class="text-xl font-semibold mb-4" data-i18n="stats.byYear">Births by Year</h3>
+                        <div class="chart-container" role="img" aria-label="Chart showing births by year">
+                            <canvas id="birthsByYearChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Country Distribution -->
+                <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
+                    <h3 class="text-xl font-semibold mb-4" data-i18n="stats.topCountries">Top Countries</h3>
+                    <div id="countryDistribution" class="space-y-3">
+                        <!-- Country distribution will be populated by JavaScript -->
+                    </div>
+                </div>
+                
+                <!-- Results Table -->
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-4">
+                        <h3 class="text-xl font-semibold" data-i18n="stats.results">Birth Twins</h3>
+                        <div class="flex flex-wrap gap-2">
+                            <button onclick="exportData('csv')" class="export-btn bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-all focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50">
+                                <i class="fas fa-file-csv mr-2" aria-hidden="true"></i>
+                                <span data-i18n="stats.exportCSV">Export CSV</span>
+                            </button>
+                            <button onclick="exportData('xlsx')" class="export-btn bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50">
+                                <i class="fas fa-file-excel mr-2" aria-hidden="true"></i>
+                                <span data-i18n="stats.exportExcel">Export Excel</span>
+                            </button>
+                            <button onclick="exportData('json')" class="export-btn bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-all focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-50">
+                                <i class="fas fa-file-code mr-2" aria-hidden="true"></i>
+                                <span data-i18n="stats.exportJSON">Export JSON</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div id="resultsTable" class="overflow-x-auto">
+                        <!-- Table will be populated by JavaScript -->
+                    </div>
+                </div>
+                
+                <button onclick="showSection('landing')" class="mt-8 text-gray-600 hover:text-gray-800 transition-all focus:outline-none focus:ring-2 focus:ring-gray-500 rounded">
+                    <i class="fas fa-arrow-left mr-2" aria-hidden="true"></i>
+                    <span data-i18n="common.back">Back to Home</span>
+                </button>
+            </div>
+        </section>
+        
+        <!-- Admin Dashboard -->
+        <section id="admin" class="hidden min-h-screen px-4 py-12" aria-labelledby="admin-title">
+            <div class="max-w-6xl mx-auto">
+                <div class="bg-white rounded-xl shadow-lg p-8">
+                    <h2 id="admin-title" class="text-3xl font-bold mb-6" data-i18n="admin.title">Admin Dashboard</h2>
+                    
+                    <!-- Login Form (if not authenticated) -->
+                    <div id="adminLogin" class="max-w-md mx-auto">
+                        <form id="adminLoginForm" class="space-y-4" novalidate>
+                            <div class="mb-4">
+                                <label for="adminEmail" class="block text-sm font-medium mb-2" data-i18n="admin.email">Admin Email</label>
+                                <input type="email" id="adminEmail" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" required>
+                            </div>
+                            <div class="mb-4">
+                                <label for="adminPassword" class="block text-sm font-medium mb-2" data-i18n="admin.password">Admin Password</label>
+                                <div class="relative">
+                                    <input type="password" id="adminPassword" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 pr-10" required>
+                                    <button type="button" onclick="togglePasswordVisibility('adminPassword')" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600" aria-label="Toggle password visibility">
+                                        <i class="fas fa-eye" id="adminPasswordToggleIcon"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <button type="submit" class="w-full bg-red-600 text-white py-2 rounded-lg hover:bg-red-700 transition-all focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50">
+                                <span data-i18n="admin.login">Login</span>
+                            </button>
+                        </form>
+                    </div>
+                    
+                    <!-- Admin Content (if authenticated) -->
+                    <div id="adminContent" class="hidden">
+                        <div class="mb-6 flex justify-between items-center">
+                            <h3 class="text-xl font-semibold" data-i18n="admin.submissions">All Submissions</h3>
+                            <button onclick="adminLogout()" class="text-red-600 hover:text-red-800 transition-all focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50 rounded">
+                                <i class="fas fa-sign-out-alt mr-2" aria-hidden="true"></i>
+                                <span data-i18n="admin.logout">Logout</span>
+                            </button>
+                        </div>
+                        
+                        <!-- Admin Stats -->
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                            <div class="bg-blue-50 p-4 rounded-lg">
+                                <h4 class="font-semibold text-blue-800" data-i18n="admin.totalReg">Total Registrations</h4>
+                                <p class="text-2xl font-bold text-blue-600" id="adminTotalReg">0</p>
+                            </div>
+                            <div class="bg-purple-50 p-4 rounded-lg">
+                                <h4 class="font-semibold text-purple-800" data-i18n="admin.todayReg">Today's Registrations</h4>
+                                <p class="text-2xl font-bold text-purple-600" id="adminTodayReg">0</p>
+                            </div>
+                            <div class="bg-green-50 p-4 rounded-lg">
+                                <h4 class="font-semibold text-green-800" data-i18n="admin.uniqueCountries">Unique Countries</h4>
+                                <p class="text-2xl font-bold text-green-600" id="adminUniqueCountries">0</p>
+                            </div>
+                            <div class="bg-pink-50 p-4 rounded-lg">
+                                <h4 class="font-semibold text-pink-800" data-i18n="admin.privacyOn">Privacy Enabled</h4>
+                                <p class="text-2xl font-bold text-pink-600" id="adminPrivacyOn">0</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Search and Filters -->
+                        <div class="mb-6 flex flex-col md:flex-row gap-4">
+                            <div class="search-container flex-1 relative">
+                                <i class="fas fa-search search-icon absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                                <input type="text" id="searchInput" placeholder="Search by email, country, or city..." class="search-input w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" data-i18n-placeholder="common.search">
+                            </div>
+                            <div class="flex gap-2">
+                                <button onclick="filterByCountry()" class="filter-chip bg-gray-100 hover:bg-gray-200 px-3 py-2 rounded-lg flex items-center transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50" data-filter="country">
+                                    <i class="fas fa-globe mr-2" aria-hidden="true"></i>
+                                    <span data-i18n="admin.filterCountry">Filter by Country</span>
+                                </button>
+                                <button onclick="filterByYear()" class="filter-chip bg-gray-100 hover:bg-gray-200 px-3 py-2 rounded-lg flex items-center transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50" data-filter="year">
+                                    <i class="fas fa-calendar mr-2" aria-hidden="true"></i>
+                                    <span data-i18n="admin.filterYear">Filter by Year</span>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div id="adminTable" class="overflow-x-auto">
+                            <!-- Admin table will be populated by JavaScript -->
+                        </div>
+                    </div>
+                </div>
+                
+                <button onclick="showSection('landing')" class="mt-8 text-gray-600 hover:text-gray-800 transition-all focus:outline-none focus:ring-2 focus:ring-gray-500 rounded">
+                    <i class="fas fa-arrow-left mr-2" aria-hidden="true"></i>
+                    <span data-i18n="common.back">Back to Home</span>
+                </button>
+            </div>
+        </section>
+    </main>
+    
+    <!-- Success Modal -->
+    <div id="successModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="success-title">
+        <div class="bg-white rounded-xl p-8 max-w-md mx-4 transform scale-95 transition-all">
+            <div class="text-center">
+                <i class="fas fa-check-circle text-6xl text-green-500 mb-4" aria-hidden="true"></i>
+                <h3 id="success-title" class="text-2xl font-bold mb-2" data-i18n="success.title">Registration Successful!</h3>
+                <p class="text-gray-600 mb-6" data-i18n="success.message">You have been successfully registered.</p>
+                <div class="bg-blue-50 p-4 rounded-lg mb-6">
+                    <p class="text-sm text-blue-800" data-i18n="success.stats">There are <span id="modalSameDay" class="font-bold">0</span> people born on the same day as you!</p>
+                </div>
+                <button onclick="closeModal()" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50">
+                    <span data-i18n="common.ok">OK</span>
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Export Progress Modal -->
+    <div id="exportModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="export-title">
+        <div class="bg-white rounded-xl p-8 max-w-md mx-4">
+            <div class="text-center">
+                <i class="fas fa-download text-4xl text-blue-500 mb-4" aria-hidden="true"></i>
+                <h3 id="export-title" class="text-xl font-bold mb-4" data-i18n="export.title">Exporting Data</h3>
+                <div class="progress-bar mb-4 bg-gray-200 rounded-full h-2.5">
+                    <div class="progress-fill bg-blue-600 h-2.5 rounded-full" id="exportProgress" style="width: 0%" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                </div>
+                <p class="text-gray-600" id="exportStatus" data-i18n="export.preparing">Preparing export...</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Scripts -->
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-storage-compat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" integrity="sha512-rZsVcZIjWH0VmtSI+EMxN2yVY8hC7A5VQcN5TQ5ZzKkV5E0fZ5E/3b8t9KjJFqZk7Q5Zf5E/3b8t9KjJFqZk7Q==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js" integrity="sha512-rZFjGR6K4pL8s5HkUx5jL8V7R1i3f0D3JR1wJg5B5lZ5E/3b8t9KjJFqZk7Q5Zf5E/3b8t9KjJFqZk7Q5Zf5E/3b8t9KjJFqZk7Q==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    
+    <!-- Load configuration first -->
+    <script src="js/config.js"></script>
+    
+    <!-- Load application script -->
+    <script src="js/app.js"></script>
+    
+    <!-- Error handling for script loading -->
+    <script>
+        window.addEventListener('error', function(e) {
+            if (e.target.tagName === 'SCRIPT') {
+                console.error('Failed to load script:', e.target.src);
+                showErrorNotification('Failed to load required resources. Please refresh the page.');
+            }
+        }, true);
+    </script>
+</body>
+</html>
